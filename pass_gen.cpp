@@ -1,12 +1,12 @@
 #include <iostream>
-#include <random>
 #include <string>
-#include <chrono>
+#include <openssl/rand.h>
 
 using namespace std;
 
 const string alphabet="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+";
 const int length=20;
+const int limit=71;
 
 void Password();
 
@@ -18,15 +18,21 @@ int main()
 
 void Password()
 {
-	unsigned seed = chrono::system_clock::now().time_since_epoch().count();
-	mt19937 generator(seed);
-	uniform_int_distribution<int> distribution(0, alphabet.length() - 1);
+	unsigned char buf[length];
 	string pass;
-	for(int i = 0; i<length; i++)
+	while(pass.length()<length)
 	{
-
-		int random_index=distribution(generator);
-		pass.append(1, alphabet[random_index]);
+		if(RAND_bytes(buf,sizeof(buf))!=1)
+		{
+			cerr<<"RNG error"<<endl;
+		}
+		for(int i=0;i<sizeof(buf) && pass.length()<length;i++)
+		{
+			if(buf[i]<=limit)
+			{
+				pass+=alphabet[buf[i]];
+			}
+		}
 	}
 	cout<<pass<<endl;
 }
