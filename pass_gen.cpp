@@ -17,7 +17,15 @@ string Password();
 
 int main()
 {
-	cout<<Password()<<endl;
+	try
+	{
+		cout<<Password()<<endl;
+	}
+	catch (const exception &e)
+	{
+		cerr<<"ERROR"<<endl;
+		return 1;
+	}
 }
 
 string Password()
