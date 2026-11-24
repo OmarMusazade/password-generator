@@ -5,10 +5,11 @@ A command-line password generator written in C++, being developed step by step i
 ## Features
 
 - Generates a random password from lowercase and uppercase letters, digits, and symbols (76 characters in total)
-- Every password contains at least one lowercase letter, one uppercase letter, one digit, and one symbol; the characters are shuffled afterwards so their positions are not predictable
+- Password length is read from standard input (4 to 128)
+- Every password contains at least one lowercase letter, one uppercase letter, one digit, and one symbol, each chosen with its own random value
+- The characters are shuffled with a Fisher-Yates shuffle, so the guaranteed characters do not always appear first
 - Uses OpenSSL `RAND_bytes`, a cryptographically secure random source
-- Rejection sampling: random bytes that are not valid indexes are discarded, so every character is equally likely (no modulo bias)
-- Password length is set by the `length` constant in the source (default: 20)
+- Rejection sampling: random bytes that are not valid indexes are discarded instead of being folded in with `%`, so every character is equally likely (no modulo bias)
 - If the random generator fails, the program prints an error to stderr and exits with code 1 instead of producing a password
 
 ## Build and run
@@ -16,28 +17,30 @@ A command-line password generator written in C++, being developed step by step i
 Requires a C++ compiler and the OpenSSL development headers (`sudo dnf install openssl-devel` on RHEL/Fedora).
 
 ```bash
-clang++ -std=c++20 pass_gen.cpp -o password -lcrypto
+clang++ -std=c++20 -Wall -Wextra pass_gen.cpp -o password -lcrypto
 ./password
 ```
 
-Example output:
+Example session:
 
 ```
+Enter the length of the password (between 4-128)
+20
 aG7!kQ2x-Lm9Pz4#wR8e
 ```
 
 ## How it works
 
 1. `RAND_bytes` fills a buffer with random bytes (0 to 255).
-2. The generator picks one character from each class, using bytes that are valid indexes.
-3. The rest of the password is filled from the full alphabet, again discarding bytes that are not valid indexes, until the password reaches the requested length.
-4. The result is shuffled by repeatedly removing a randomly chosen character and appending it to a new string.
+2. For each of the four character classes, the first byte that is a valid index into that class selects one character. Bytes that are too large are discarded.
+3. The rest of the password is filled from the full alphabet in the same way, until it reaches the requested length.
+4. The result is shuffled with Fisher-Yates: a random character is repeatedly removed from the remaining ones and appended to the new password.
 
 ## Known limitations
 
-- The length and character set are fixed in the source.
-- The four guaranteed characters are chosen using a single random value, so they carry less randomness than the rest of the password.
-- Passwords are only printed to the terminal, not stored.
+- Passwords are limited to 128 characters, because the shuffle selects positions with a single random byte.
+- The character set is fixed in the source.
+- Passwords are only printed to the terminal, not stored, and they are not wiped from memory after use.
 
 ## Roadmap
 
@@ -45,8 +48,8 @@ aG7!kQ2x-Lm9Pz4#wR8e
 - [x] Replace `mt19937` with a cryptographically secure source (OpenSSL `RAND_bytes`)
 - [x] Return the password from `Password()` instead of printing it, so other code can reuse it
 - [x] Guarantee at least one character from each class (lowercase, uppercase, digit, symbol)
-- [ ] Choose each guaranteed character with its own random value
-- [ ] Let the user choose the password length
+- [x] Choose each guaranteed character with its own random value
+- [x] Let the user choose the password length
 
 **Password manager**
 - [ ] Split the code into modules (generator, crypto, storage)
@@ -55,4 +58,4 @@ aG7!kQ2x-Lm9Pz4#wR8e
 
 ## License
 
-See [LICENSE](MIT).
+See MIT [LICENSE](LICENSE).
